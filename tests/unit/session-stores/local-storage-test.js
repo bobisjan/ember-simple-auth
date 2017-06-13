@@ -5,13 +5,11 @@ import itBehavesLikeAStore from './shared/store-behavior';
 describe('LocalStorageStore', () => {
   let store;
 
-  beforeEach(function() {
-    store = LocalStorage.create({
-      _isFastBoot: false
-    });
+  beforeEach(() => {
+    store = LocalStorage.create();
   });
 
-  afterEach(function() {
+  afterEach(() => {
     store.clear();
   });
 

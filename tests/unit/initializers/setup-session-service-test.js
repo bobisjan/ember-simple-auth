@@ -1,5 +1,6 @@
 /* jshint expr:true */
-import { describe, beforeEach, it } from 'mocha';
+import { it } from 'ember-mocha';
+import { describe, beforeEach } from 'mocha';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import setupSessionService from 'ember-simple-auth/initializers/setup-session-service';
@@ -7,13 +8,13 @@ import setupSessionService from 'ember-simple-auth/initializers/setup-session-se
 describe('setupSessionService', () => {
   let registry;
 
-  beforeEach(function() {
+  beforeEach(() => {
     registry = {
       injection() {}
     };
   });
 
-  it('injects the session into the session service', function() {
+  it('injects the session into the session service', () => {
     sinon.spy(registry, 'injection');
     setupSessionService(registry);
 

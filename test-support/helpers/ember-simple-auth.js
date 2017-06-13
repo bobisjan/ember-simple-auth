@@ -1,5 +1,3 @@
-/* global wait */
-
 import Test from 'ember-simple-auth/authenticators/test';
 
 const TEST_CONTAINER_KEY = 'authenticator:test';
@@ -17,11 +15,11 @@ export function authenticateSession(app, sessionData) {
   ensureAuthenticator(app, container);
   session.authenticate(TEST_CONTAINER_KEY, sessionData);
   return wait();
-}
+};
 
 export function currentSession(app) {
   return app.__container__.lookup('service:session');
-}
+};
 
 export function invalidateSession(app) {
   const session = app.__container__.lookup('service:session');
@@ -29,4 +27,4 @@ export function invalidateSession(app) {
     session.invalidate();
   }
   return wait();
-}
+};

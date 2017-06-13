@@ -1,3 +1,4 @@
+/* jscs:disable requireDotNotation */
 import Ember from 'ember';
 import Base from './base';
 

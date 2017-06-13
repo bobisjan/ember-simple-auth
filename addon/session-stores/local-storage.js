@@ -3,7 +3,7 @@ import Ember from 'ember';
 import BaseStore from './base';
 import objectsAreEqual from '../utils/objects-are-equal';
 
-const { RSVP, $: jQuery, computed, getOwner } = Ember;
+const { RSVP, $: jQuery } = Ember;
 
 /**
   Session store that persists data in the browser's `localStorage`.
@@ -14,23 +14,12 @@ const { RSVP, $: jQuery, computed, getOwner } = Ember;
   the {{#crossLink "CookieStore"}}{{/crossLink}} when `localStorage` is not
   available.__
 
-  __This session store does not work with FastBoot. In order to use Ember
-  Simple Auth with FastBoot, configure the
-  {{#crossLink "CookieStore"}}{{/crossLink}} as the application's session
-  store.__
-
   @class LocalStorageStore
   @module ember-simple-auth/session-stores/local-storage
   @extends BaseStore
   @public
 */
 export default BaseStore.extend({
-  _isFastBoot: computed(function() {
-    const fastboot = getOwner(this).lookup('service:fastboot');
-
-    return fastboot ? fastboot.get('isFastBoot') : false;
-  }),
-
   /**
     The `localStorage` key the store persists data in.
 
@@ -44,9 +33,7 @@ export default BaseStore.extend({
   init() {
     this._super(...arguments);
 
-    if (!this.get('_isFastBoot')) {
-      this._bindToStorageEvents();
-    }
+    this._bindToStorageEvents();
   },
 
   /**
@@ -95,7 +82,7 @@ export default BaseStore.extend({
   },
 
   _bindToStorageEvents() {
-    jQuery(window).on('storage', (e) => {
+    jQuery(window).bind('storage', (e) => {
       if (e.originalEvent.key === this.key) {
         this.restore().then((data) => {
           if (!objectsAreEqual(data, this._lastData)) {

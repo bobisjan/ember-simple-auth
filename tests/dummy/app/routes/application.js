@@ -12,10 +12,10 @@ export default Route.extend(ApplicationRouteMixin, {
 
   sessionAuthenticated() {
     this._super(...arguments);
-    this._loadCurrentUser();
+    this._loadCurrentUser().catch(() => this.get('session').invalidate());
   },
 
   _loadCurrentUser() {
-    return this.get('sessionAccount').loadCurrentUser().catch(() => this.get('session').invalidate());
+    return this.get('sessionAccount').loadCurrentUser();
   }
 });

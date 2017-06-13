@@ -1,31 +1,19 @@
-import Ember from 'ember';
-import { describe, beforeEach, afterEach, it } from 'mocha';
-import { expect } from 'chai';
-import sinon from 'sinon';
+import { describe, beforeEach, afterEach } from 'mocha';
 import Adaptive from 'ember-simple-auth/session-stores/adaptive';
 import itBehavesLikeAStore from './shared/store-behavior';
 import itBehavesLikeACookieStore from './shared/cookie-store-behavior';
 import FakeCookieService from '../../helpers/fake-cookie-service';
 
-const { assign: emberAssign, merge, run } = Ember;
-const assign = emberAssign || merge;
-
 describe('AdaptiveStore', () => {
   let store;
 
-  afterEach(function() {
+  afterEach(() => {
     store.clear();
   });
 
-  describe('when localStorage is available', function() {
-    beforeEach(function() {
-      store = Adaptive.extend({
-        _createStore(storeType, options) {
-          return this._super(storeType, assign(options, { _isFastBoot: false }));
-        }
-      }).create({
-        _isLocalStorageAvailable: true
-      });
+  describe('when localStorage is available', () => {
+    beforeEach(() => {
+      store = Adaptive.create({ _isLocalStorageAvailable: true });
     });
 
     itBehavesLikeAStore({
@@ -35,20 +23,11 @@ describe('AdaptiveStore', () => {
     });
   });
 
-  describe('when localStorage is not available', function() {
-    let cookieService;
-    beforeEach(function() {
-      cookieService = FakeCookieService.create();
-      sinon.spy(cookieService, 'read');
-      sinon.spy(cookieService, 'write');
-      store = Adaptive.extend({
-        _createStore(storeType, options) {
-          return this._super(storeType, assign({}, options, { _isFastBoot: false }));
-        }
-      }).create({
-        _isLocalStorageAvailable: false,
-        _cookies: cookieService
-      });
+  describe('when localStorage is not available', () => {
+    beforeEach(() => {
+      store = Adaptive.create({ _isLocalStorageAvailable: false });
+      store.set('_store._cookies', FakeCookieService.create());
+      store.set('_store._fastboot', { isFastBoot: false });
     });
 
     itBehavesLikeAStore({
@@ -58,48 +37,19 @@ describe('AdaptiveStore', () => {
     });
 
     itBehavesLikeACookieStore({
-      createStore(cookieService, options = {}) {
+      createStore(cookiesService, options = {}) {
         options._isLocalStorageAvailable = false;
-        return Adaptive.extend({
-          _cookies: cookieService,
-          _fastboot: { isFastBoot: false },
-          _createStore(storeType, options) {
-            return this._super(storeType, assign({}, options, { _isFastBoot: false }));
-          }
-        }).create(options);
+        const store = Adaptive.create(options);
+        store.set('_store._cookies', cookiesService);
+        store.set('_store._fastboot', { isFastBoot: false });
+        return store;
       },
       renew(store, data) {
-        return store.get('_store')._renew(data);
+        store.get('_store')._renew(data);
       },
       sync(store) {
         store.get('_store')._syncData();
-      },
-      spyRewriteCookieMethod(store) {
-        sinon.spy(store.get('_store'), 'rewriteCookie');
-        return store.get('_store').rewriteCookie;
       }
-    });
-
-    it('persists to cookie when cookie attributes change', function() {
-      let now = new Date();
-
-      run(() => {
-        store.persist({ key: 'value' });
-        store.setProperties({
-          cookieName:           'test:session',
-          cookieExpirationTime: 60
-        });
-      });
-
-      expect(cookieService.write).to.have.been.calledWith(
-        'test:session-expiration_time',
-        60,
-        sinon.match(function({ domain, expires, path, secure }) {
-          return domain === null &&
-            path === '/' &&
-            secure === false && expires >= new Date(now.getTime() + 60 * 1000);
-        })
-      );
     });
   });
 });

@@ -1,12 +1,13 @@
 import Ember from 'ember';
+import getOwner from 'ember-getowner-polyfill';
 
 const SESSION_DATA_KEY_PREFIX = /^data\./;
 
-const { computed, A, Service, Evented, getOwner, isNone, assert } = Ember;
+const { computed, A, Service, Evented }  = Ember;
 
 /**
   __The session service provides access to the current session as well as
-  methods to authenticate it, invalidate it, etc.__ It is the main interface for
+  methods to authenticate and invalidate it__ etc. It is the main interface for
   the application to Ember Simple Auth's functionality. It can be injected via
 
   ```js
@@ -226,7 +227,6 @@ export default Service.extend(Evented, {
   authorize(authorizerFactory, block) {
     if (this.get('isAuthenticated')) {
       const authorizer = getOwner(this).lookup(authorizerFactory);
-      assert(`No authorizer for factory ${authorizerFactory} could be found!`, !isNone(authorizer));
       const sessionData = this.get('data.authenticated');
       authorizer.authorize(sessionData, block);
     }

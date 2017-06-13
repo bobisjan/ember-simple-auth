@@ -1,6 +1,7 @@
 /* jshint expr:true */
 import Ember from 'ember';
-import { describe, beforeEach, it } from 'mocha';
+import { it } from 'ember-mocha';
+import { describe, beforeEach } from 'mocha';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import setupSessionRestoration from 'ember-simple-auth/instance-initializers/setup-session-restoration';
@@ -12,7 +13,7 @@ describe('setupSessionRestoration', () => {
   let containerStub;
   let route;
 
-  beforeEach(function() {
+  beforeEach(() => {
     container = {
       lookup() {}
     };
@@ -22,17 +23,17 @@ describe('setupSessionRestoration', () => {
     containerStub = sinon.stub(container, 'lookup');
   });
 
-  it('adds a beforeModel method', function() {
+  it('adds a beforeModel method', () => {
     containerStub.withArgs('route:application').returns(route);
     setupSessionRestoration({ container });
 
     expect(route).to.respondTo('beforeModel');
   });
 
-  describe('the beforeModel method', function() {
+  describe('the beforeModel method', () => {
     let session;
 
-    beforeEach(function() {
+    beforeEach(() => {
       session = {
         restore() {}
       };
@@ -48,24 +49,24 @@ describe('setupSessionRestoration', () => {
       setupSessionRestoration({ container });
     });
 
-    describe('when session restoration resolves', function() {
-      beforeEach(function() {
+    describe('when session restoration resolves', () => {
+      beforeEach(() => {
         sinon.stub(session, 'restore').returns(RSVP.resolve());
       });
 
-      it('returns the return value of the original "beforeModel" method', function() {
+      it('returns the return value of the original "beforeModel" method', () => {
         return route.beforeModel().then((value) => {
           expect(value).to.eq('test');
         });
       });
     });
 
-    describe('when session restoration rejects', function() {
-      beforeEach(function() {
+    describe('when session restoration rejects', () => {
+      beforeEach(() => {
         sinon.stub(session, 'restore').returns(RSVP.reject());
       });
 
-      it('returns the return value of the original "beforeModel" method', function() {
+      it('returns the return value of the original "beforeModel" method', () => {
         return route.beforeModel().then((value) => {
           expect(value).to.eq('test');
         });

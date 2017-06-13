@@ -11,16 +11,16 @@
     {{#if access}}
       <span class="label label-access-{{access}} pull-right">{{access}}</span>
     {{/if}}
-    {{#exists readonly}}
+    {{#if readOnly}}
       <span class="label label-warning pull-right">readonly</span>
-    {{/exists}}
+    {{/if}}
     <h3 class="panel-title signature">
       <strong class="name">`{{name}}`</strong>: <code>{{#crossLink type}}{{/crossLink}}</code>
     </h3>
   </div>
   <div class="panel-body">
     {{#if deprecationMessage}}
-      <p><span class="label label-warning label-deprecated">Deprecated:</span>Use {{#crossLink deprecationMessage}}{{/crossLink}} instead</p>
+      <p><span class="label label-warning">Deprecated:</span>Use {{#crossLink deprecationMessage}}{{/crossLink}} instead</p>
     {{/if}}
     {{#if default}}
       <p><span class="label label-default">Default:</span> `{{{default}}}`</p>

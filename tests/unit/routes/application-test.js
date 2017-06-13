@@ -1,13 +1,10 @@
 /* jshint expr:true */
 import { expect } from 'chai';
-import { it, describe } from 'mocha';
-import { setupTest } from 'ember-mocha';
+import { describeModule, it } from 'ember-mocha';
 
-describe('ApplicationRoute', function() {
-  setupTest('route:application', {
-    needs: ['service:session', 'router:main', 'service:session-account']
-  });
-
+describeModule('route:application', 'ApplicationRoute', {
+  needs: ['service:session', 'router:main']
+}, function() {
   it('is still testable when using the ApplicationRouteMixin', function() {
     const route = this.subject();
 

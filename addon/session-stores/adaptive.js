@@ -4,25 +4,9 @@ import Base from 'ember-simple-auth/session-stores/base';
 import LocalStorage from 'ember-simple-auth/session-stores/local-storage';
 import Cookie from 'ember-simple-auth/session-stores/cookie';
 
-const { computed, inject: { service }, getOwner } = Ember;
+const { computed } = Ember;
 
 const LOCAL_STORAGE_TEST_KEY = '_ember_simple_auth_test_key';
-
-const proxyToInternalStore = function() {
-  return computed({
-    get(key) {
-      return this.get(`_${key}`);
-    },
-    set(key, value) {
-      this.set(`_${key}`, value);
-      let _store = this.get('_store');
-      if (_store) {
-        _store.set(key, value);
-      }
-      return value;
-    }
-  });
-};
 
 /**
   Session store that persists data in the browser's `localStorage` (see
@@ -31,11 +15,6 @@ const proxyToInternalStore = function() {
 
   __This is the default store that Ember Simple Auth will use when the
   application doesn't define a custom store.__
-
-  __This session store does not work with FastBoot. In order to use Ember
-  Simple Auth with FastBoot, configure the
-  {{#crossLink "CookieStore"}}{{/crossLink}} as the application's session
-  store.__
 
   @class AdaptiveStore
   @module ember-simple-auth/session-stores/adaptive
@@ -55,18 +34,26 @@ export default Base.extend({
   localStorageKey: 'ember_simple_auth-session',
 
   /**
+   The cookie store injected by initializers/setup-session.
+   This is necessary for the adaptive session store because it and only it
+   creates an instance of another store, bypassing the Ember registry.
+   Because the created store does not come from the registry, it has no
+   container and you cannot call getOwner within it.
+  */
+  cookies: null,
+
+  /**
     The domain to use for the cookie if `localStorage` is not available, e.g.,
     "example.com", ".example.com" (which includes all subdomains) or
     "subdomain.example.com". If not explicitly set, the cookie domain defaults
-    to the domain the session was authenticated on.
+    to the domain the session was authneticated on.
 
     @property cookieDomain
     @type String
     @default null
     @public
   */
-  _cookieDomain: null,
-  cookieDomain: proxyToInternalStore(),
+  cookieDomain: null,
 
   /**
     The name of the cookie to use if `localStorage` is not available.
@@ -76,19 +63,7 @@ export default Base.extend({
     @default ember_simple_auth-session
     @public
   */
-  _cookieName: 'ember_simple_auth-session',
-  cookieName: proxyToInternalStore(),
-
-  /**
-    The path to use for the cookie, e.g., "/", "/something".
-
-    @property cookiePath
-    @type String
-    @default '/'
-    @public
-  */
-  _cookiePath: '/',
-  cookiePath: proxyToInternalStore(),
+  cookieName: 'ember_simple_auth-session',
 
   /**
     The expiration time for the cookie in seconds if `localStorage` is not
@@ -100,23 +75,14 @@ export default Base.extend({
     @type Integer
     @public
   */
-  _cookieExpirationTime: null,
-  cookieExpirationTime: proxyToInternalStore(),
-
-  _cookies: service('cookies'),
-
-  _fastboot: computed(function() {
-    let owner = getOwner(this);
-
-    return owner && owner.lookup('service:fastboot');
-  }),
+  cookieExpirationTime: null,
 
   _isLocalStorageAvailable: computed(function() {
     try {
       localStorage.setItem(LOCAL_STORAGE_TEST_KEY, true);
       localStorage.removeItem(LOCAL_STORAGE_TEST_KEY);
       return true;
-    } catch (e) {
+    } catch(e) {
       return false;
     }
   }),
@@ -127,12 +93,9 @@ export default Base.extend({
     let store;
     if (this.get('_isLocalStorageAvailable')) {
       const options = { key: this.get('localStorageKey') };
-      options._isFastBoot = false;
       store = this._createStore(LocalStorage, options);
     } else {
-      const options = this.getProperties('cookieDomain', 'cookieName', 'cookieExpirationTime', 'cookiePath');
-      options._fastboot = this.get('_fastboot');
-      options._cookies = this.get('_cookies');
+      const options = this.getProperties('cookieDomain', 'cookieName', 'cookieExpirationTime');
       store = this._createStore(Cookie, options);
     }
     this.set('_store', store);

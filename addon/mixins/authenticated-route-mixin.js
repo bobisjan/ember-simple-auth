@@ -1,7 +1,8 @@
 import Ember from 'ember';
+import getOwner from 'ember-getowner-polyfill';
 import Configuration from './../configuration';
 
-const { inject: { service }, Mixin, assert, computed, getOwner } = Ember;
+const { inject: { service }, Mixin, assert, computed } = Ember;
 
 /**
   __This mixin is used to make routes accessible only if the session is
@@ -61,12 +62,9 @@ export default Mixin.create({
     If the current transition is aborted, this method will save it in the
     session service's
     {{#crossLink "SessionService/attemptedTransition:property"}}{{/crossLink}}
-    property so that  it can be retried after the session is authenticated
+    property so that  it can be retried after the session was authenticated
     (see
-    {{#crossLink "ApplicationRouteMixin/sessionAuthenticated:method"}}{{/crossLink}}).
-    If the transition is aborted in Fastboot mode, the transition's target
-    URL will be saved in a `ember_simple_auth-redirectTarget` cookie for use by
-    the browser after authentication is complete.
+    {{#crossLink "ApplicationRouteMixin/sessionAuthenticated:method"}}{{/crossLink}}.
 
     __If `beforeModel` is overridden in a route that uses this mixin, the route's
    implementation must call `this._super(...arguments)`__ so that the mixin's
@@ -81,15 +79,8 @@ export default Mixin.create({
       let authenticationRoute = this.get('authenticationRoute');
       assert('The route configured as Configuration.authenticationRoute cannot implement the AuthenticatedRouteMixin mixin as that leads to an infinite transitioning loop!', this.get('routeName') !== authenticationRoute);
 
-      if (this.get('_isFastBoot')) {
-        const fastboot = getOwner(this).lookup('service:fastboot');
-        const cookies = getOwner(this).lookup('service:cookies');
-
-        cookies.write('ember_simple_auth-redirectTarget', transition.intent.url, {
-          path: '/',
-          secure: fastboot.get('request.protocol') === 'https'
-        });
-      } else {
+      if (!this.get('_isFastBoot')) {
+        transition.abort();
         this.set('session.attemptedTransition', transition);
       }
 

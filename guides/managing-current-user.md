@@ -50,14 +50,7 @@ export default Component.extend({
 
 In this example, the service does not need to know the ID of the current user
 as it uses a dedicated endpoint instead that will always respond with the user
-belonging to the authorization token in the request.
-
-Note: Using `store.queryRecord` is the correct way to query for a record when id is
-unknown. Ember data expects the returned model to have the same id, as otherwise an
-unused empty record with `id` of `me` is in the store.
-
-We can override the adapter to generate `api/users/me` when `store.queryRecord` is
-invoked with a query param where the `me` param is present.
+belonging to the authorization token in the request:
 
 ```js
 // app/services/current-user.js
@@ -66,31 +59,12 @@ import Ember from 'ember';
 const { inject: { service }, isEmpty, RSVP } = Ember;
 
 export default Ember.Service.extend({
-  session: service('session'),
   store: service(),
 
   load() {
-    if (this.get('session.isAuthenticated')) {
-      return this.get('store').queryRecord('user', { me: true }).then((user) => {
-        this.set('user', user);
-      });
-    } else {
-      return Ember.RSVP.resolve();
-    }
-  }
-});
-
-// app/adapters/user.js
-import ApplicationAdapter from './application';
-
-export default ApplicationAdapter.extend({
-  urlForQueryRecord(query) {
-    if (query.me) {
-      delete query.me;
-      return `${this._super(...arguments)}/me`;
-    }
-
-    return this._super(...arguments);
+    return this.get('store').find('user', 'me').then((user) => {
+      this.set('user', user);
+    });
   }
 });
 ```
@@ -112,14 +86,16 @@ export default Ember.Service.extend({
   store: service(),
 
   load() {
-    let userId = this.get('session.data.authenticated.user_id');
-    if (!isEmpty(userId)) {
-      return this.get('store').findRecord('user', userId).then((user) => {
-        this.set('user', user);
-      });
-    } else {
-      return Ember.RSVP.resolve();
-    }
+    return new RSVP.Promise((resolve, reject) => {
+      let userId = this.get('session.data.authenticated.user_id');
+      if (!isEmpty(userId)) {
+        return this.get('store').find('user', userId).then((user) => {
+          this.set('user', user);
+        }, reject);
+      } else {
+        resolve();
+      }
+    });
   }
 });
 ```
@@ -152,11 +128,11 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
 
   sessionAuthenticated() {
     this._super(...arguments);
-    this._loadCurrentUser();
+    this._loadCurrentUser().catch(() => this.get('session').invalidate());
   },
 
   _loadCurrentUser() {
-    return this.get('currentUser').load().catch(() => this.get('session').invalidate());
+    return this.get('currentUser').load();
   }
 });
 ```

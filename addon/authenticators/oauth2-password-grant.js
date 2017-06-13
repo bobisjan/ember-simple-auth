@@ -1,6 +1,6 @@
+/* jscs:disable requireDotNotation */
 import Ember from 'ember';
 import BaseAuthenticator from './base';
-import fetch from 'ember-network/fetch';
 
 const {
   RSVP,
@@ -11,6 +11,7 @@ const {
   assign: emberAssign,
   merge,
   A,
+  $: jQuery,
   testing,
   warn,
   keys: emberKeys
@@ -68,7 +69,7 @@ export default BaseAuthenticator.extend({
 
   /**
     The endpoint on the server that token revocation requests are sent to. Only
-    set this if the server actually supports token revocation. If this is
+    set this if the server actually supports token revokation. If this is
     `null`, the authenticator will not revoke tokens on session invalidation.
 
     __If token revocation is enabled but fails, session invalidation will be
@@ -112,7 +113,7 @@ export default BaseAuthenticator.extend({
     const min = 5;
     const max = 10;
 
-    return (Math.floor(Math.random() * (max - min)) + min) * 1000;
+    return (Math.floor(Math.random() * min) + (max - min)) * 1000;
   }).volatile(),
 
   _refreshTokenTimeout: null,
@@ -128,8 +129,7 @@ export default BaseAuthenticator.extend({
 
   /**
     When authentication fails, the rejection callback is provided with the whole
-    Fetch API [Response](https://fetch.spec.whatwg.org/#response-class) object
-    instead of its responseJSON or responseText.
+    XHR object instead of it's response JSON or text.
 
     This is useful for cases when the backend provides additional context not
     available in the response body.
@@ -137,28 +137,9 @@ export default BaseAuthenticator.extend({
     @property rejectWithXhr
     @type Boolean
     @default false
-    @deprecated OAuth2PasswordGrantAuthenticator/rejectWithResponse:property
     @public
   */
-  rejectWithXhr: computed.deprecatingAlias('rejectWithResponse', {
-    id: `ember-simple-auth.authenticator.reject-with-xhr`,
-    until: '2.0.0'
-  }),
-
-  /**
-    When authentication fails, the rejection callback is provided with the whole
-    Fetch API [Response](https://fetch.spec.whatwg.org/#response-class) object
-    instead of its responseJSON or responseText.
-
-    This is useful for cases when the backend provides additional context not
-    available in the response body.
-
-    @property rejectWithResponse
-    @type Boolean
-    @default false
-    @public
-  */
-  rejectWithResponse: false,
+  rejectWithXhr: false,
 
   /**
     Restores the session from a session data object; __will return a resolving
@@ -180,7 +161,7 @@ export default BaseAuthenticator.extend({
   */
   restore(data) {
     return new RSVP.Promise((resolve, reject) => {
-      const now = (new Date()).getTime();
+      const now                 = (new Date()).getTime();
       const refreshAccessTokens = this.get('refreshAccessTokens');
       if (!isEmpty(data['expires_at']) && data['expires_at'] < now) {
         if (refreshAccessTokens) {
@@ -226,9 +207,9 @@ export default BaseAuthenticator.extend({
   */
   authenticate(identification, password, scope = [], headers = {}) {
     return new RSVP.Promise((resolve, reject) => {
-      const data = { 'grant_type': 'password', username: identification, password };
+      const data                = { 'grant_type': 'password', username: identification, password };
       const serverTokenEndpoint = this.get('serverTokenEndpoint');
-      const useResponse = this.get('rejectWithResponse');
+      const useXhr = this.get('rejectWithXhr');
       const scopesString = makeArray(scope).join(' ');
       if (!isEmpty(scopesString)) {
         data.scope = scopesString;
@@ -247,8 +228,8 @@ export default BaseAuthenticator.extend({
 
           resolve(response);
         });
-      }, (response) => {
-        run(null, reject, useResponse ? response : response.responseJSON);
+      }, (xhr) => {
+        run(null, reject, useXhr ? xhr : (xhr.responseJSON || xhr.responseText));
       });
     });
   },
@@ -302,39 +283,29 @@ export default BaseAuthenticator.extend({
     @param {String} url The request URL
     @param {Object} data The request data
     @param {Object} headers Additional headers to send in request
-    @return {Promise} A promise that resolves with the response object
+    @return {jQuery.Deferred} A promise like jQuery.Deferred as returned by `$.ajax`
     @protected
   */
   makeRequest(url, data, headers = {}) {
-    headers['Content-Type'] = 'application/x-www-form-urlencoded';
-
-    const body = keys(data).map((key) => {
-      return `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`;
-    }).join('&');
-
     const options = {
-      body,
-      headers,
-      method: 'POST'
+      url,
+      data,
+      type:        'POST',
+      dataType:    'json',
+      contentType: 'application/x-www-form-urlencoded',
+      headers
     };
 
     const clientIdHeader = this.get('_clientIdHeader');
     if (!isEmpty(clientIdHeader)) {
       merge(options.headers, clientIdHeader);
     }
-    return new RSVP.Promise((resolve, reject) => {
-      fetch(url, options).then((response) => {
-        response.text().then((text) => {
-          let json = text ? JSON.parse(text) : {};
-          if (!response.ok) {
-            response.responseJSON = json;
-            reject(response);
-          } else {
-            resolve(json);
-          }
-        });
-      }).catch(reject);
-    });
+
+    if (isEmpty(keys(options.headers))) {
+      delete options.headers;
+    }
+
+    return jQuery.ajax(options);
   },
 
   _scheduleAccessTokenRefresh(expiresIn, expiresAt, refreshToken) {
@@ -356,21 +327,21 @@ export default BaseAuthenticator.extend({
   },
 
   _refreshAccessToken(expiresIn, refreshToken) {
-    const data = { 'grant_type': 'refresh_token', 'refresh_token': refreshToken };
+    const data                = { 'grant_type': 'refresh_token', 'refresh_token': refreshToken };
     const serverTokenEndpoint = this.get('serverTokenEndpoint');
     return new RSVP.Promise((resolve, reject) => {
       this.makeRequest(serverTokenEndpoint, data).then((response) => {
         run(() => {
-          expiresIn = response['expires_in'] || expiresIn;
-          refreshToken = response['refresh_token'] || refreshToken;
+          expiresIn       = response['expires_in'] || expiresIn;
+          refreshToken    = response['refresh_token'] || refreshToken;
           const expiresAt = this._absolutizeExpirationTime(expiresIn);
-          const data = assign(response, { 'expires_in': expiresIn, 'expires_at': expiresAt, 'refresh_token': refreshToken });
+          const data      = assign(response, { 'expires_in': expiresIn, 'expires_at': expiresAt, 'refresh_token': refreshToken });
           this._scheduleAccessTokenRefresh(expiresIn, null, refreshToken);
           this.trigger('sessionDataUpdated', data);
           resolve(data);
         });
-      }, (response) => {
-        warn(`Access token could not be refreshed - server responded with ${response.responseJSON}.`);
+      }, (xhr, status, error) => {
+        warn(`Access token could not be refreshed - server responded with ${error}.`);
         reject();
       });
     });

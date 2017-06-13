@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import getOwner from 'ember-getowner-polyfill';
 
 const {
   RSVP,
@@ -11,8 +12,7 @@ const {
   assert,
   deprecate,
   set,
-  debug,
-  getOwner
+  debug
 } = Ember;
 const assign = emberAssign || merge;
 
@@ -51,7 +51,7 @@ export default ObjectProxy.extend(Evented, {
     assert('Session#invalidate requires the session to be authenticated!', this.get('isAuthenticated'));
 
     let authenticator = this._lookupAuthenticator(this.authenticator);
-    return authenticator.invalidate(this.content.authenticated, ...arguments).then(() => {
+    return authenticator.invalidate(this.content.authenticated).then(() => {
       authenticator.off('sessionDataUpdated');
       this._busy = false;
       return this._clear(true);
@@ -68,7 +68,7 @@ export default ObjectProxy.extend(Evented, {
 
     return this._callStoreAsync('restore').then((restoredContent) => {
       let { authenticator: authenticatorFactory } = restoredContent.authenticated || {};
-      if (authenticatorFactory) {
+      if (!!authenticatorFactory) {
         delete restoredContent.authenticated.authenticator;
         const authenticator = this._lookupAuthenticator(authenticatorFactory);
         return authenticator.restore(restoredContent.authenticated).then((content) => {
@@ -109,7 +109,7 @@ export default ObjectProxy.extend(Evented, {
   },
 
   _setup(authenticator, authenticatedContent, trigger) {
-    trigger = Boolean(trigger) && !this.get('isAuthenticated');
+    trigger = !!trigger && !this.get('isAuthenticated');
     this.beginPropertyChanges();
     this.setProperties({
       isAuthenticated: true,
@@ -134,7 +134,7 @@ export default ObjectProxy.extend(Evented, {
   },
 
   _clear(trigger) {
-    trigger = Boolean(trigger) && this.get('isAuthenticated');
+    trigger = !!trigger && this.get('isAuthenticated');
     this.beginPropertyChanges();
     this.setProperties({
       isAuthenticated: false,
@@ -187,7 +187,7 @@ export default ObjectProxy.extend(Evented, {
       if (!this._busy) {
         this._busy = true;
         let { authenticator: authenticatorFactory } = (content.authenticated || {});
-        if (authenticatorFactory) {
+        if (!!authenticatorFactory) {
           delete content.authenticated.authenticator;
           const authenticator = this._lookupAuthenticator(authenticatorFactory);
           authenticator.restore(content.authenticated).then((authenticatedContent) => {

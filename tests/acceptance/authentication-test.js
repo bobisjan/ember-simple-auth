@@ -23,8 +23,8 @@ describe('Acceptance: Authentication', function() {
     destroyApp(application);
   });
 
-  describe('the protected route', function() {
-    it('cannot be visited when the session is not authenticated', function() {
+  describe('the protected route', () => {
+    it('cannot be visited when the session is not authenticated', () => {
       invalidateSession(application);
       visit('/protected');
 
@@ -33,7 +33,7 @@ describe('Acceptance: Authentication', function() {
       });
     });
 
-    it('can be visited when the session is authenticated', function() {
+    it('can be visited when the session is authenticated', () => {
       server = new Pretender(function() {
         this.get(`${config.apiHost}/posts`, () => [200, { 'Content-Type': 'application/json' }, '{"data":[]}']);
       });
@@ -50,8 +50,8 @@ describe('Acceptance: Authentication', function() {
     });
   });
 
-  describe('the login route', function() {
-    it('can be visited when the session is not authenticated', function() {
+  describe('the login route', () => {
+    it('can be visited when the session is not authenticated', () => {
       invalidateSession(application);
       visit('/login');
 
@@ -60,7 +60,7 @@ describe('Acceptance: Authentication', function() {
       });
     });
 
-    it('cannot be visited when the session is authenticated', function() {
+    it('cannot be visited when the session is authenticated', () => {
       authenticateSession(application);
       visit('/login');
 

@@ -1,11 +1,11 @@
 import Ember from 'ember';
 import Configuration from './../configuration';
 
-const { inject, Mixin, A, run: { bind }, testing, computed, getOwner } = Ember;
+const { inject, Mixin, A, run: { bind }, testing, computed } = Ember;
 
 /**
-  The mixin for the application route, __defining methods that are called when
-  the session is successfully authenticated (see
+  The mixin for the application route; __defines methods that are called when
+  the session was successfully authenticated (see
   {{#crossLink "SessionService/authenticationSucceeded:event"}}{{/crossLink}})
   or invalidated__ (see
   {{#crossLink "SessionService/invalidationSucceeded:event"}}{{/crossLink}}).
@@ -22,7 +22,7 @@ const { inject, Mixin, A, run: { bind }, testing, computed, getOwner } = Ember;
       applicationRoute.transitionTo('index');
     });
     session.on('invalidationSucceeded', function() {
-      applicationRoute.transitionTo('bye');
+      window.location.reload();
     });
   };
 
@@ -51,12 +51,6 @@ export default Mixin.create({
     @public
   */
   session: inject.service('session'),
-
-  _isFastBoot: computed(function() {
-    const fastboot = getOwner(this).lookup('service:fastboot');
-
-    return fastboot ? fastboot.get('isFastBoot') : false;
-  }),
 
   /**
     The route to transition to after successful authentication.
@@ -89,29 +83,21 @@ export default Mixin.create({
   /**
     This method handles the session's
     {{#crossLink "SessionService/authenticationSucceeded:event"}}{{/crossLink}}
-    event. If there is a transition that was previously intercepted by the
-    {{#crossLink "AuthenticatedRouteMixin/beforeModel:method"}}
+    event. If there is a transition that was previously intercepted by
+    {{#crossLink "AuthenticatedRouteMixin/beforeModel:method"}}the
     AuthenticatedRouteMixin's `beforeModel` method{{/crossLink}} it will retry
-    it. If there is no such transition, the `ember_simple_auth-redirectTarget`
-    cookie will be checked for a url that represents an attemptedTransition
-    that was aborted in Fastboot mode, otherwise this action transitions to the
+    it. If there is no such transition, this action transitions to the
     {{#crossLink "Configuration/routeAfterAuthentication:property"}}{{/crossLink}}.
-
 
     @method sessionAuthenticated
     @public
   */
   sessionAuthenticated() {
     const attemptedTransition = this.get('session.attemptedTransition');
-    const cookies = getOwner(this).lookup('service:cookies');
-    const redirectTarget = cookies.read('ember_simple_auth-redirectTarget');
 
     if (attemptedTransition) {
       attemptedTransition.retry();
       this.set('session.attemptedTransition', null);
-    } else if (redirectTarget) {
-      this.transitionTo(redirectTarget);
-      cookies.clear('ember_simple_auth-redirectTarget');
     } else {
       this.transitionTo(this.get('routeAfterAuthentication'));
     }
@@ -134,11 +120,7 @@ export default Mixin.create({
   */
   sessionInvalidated() {
     if (!testing) {
-      if (this.get('_isFastBoot')) {
-        this.transitionTo(Configuration.baseURL);
-      } else {
-        window.location.replace(Configuration.baseURL);
-      }
+      window.location.replace(Configuration.baseURL);
     }
   }
 });

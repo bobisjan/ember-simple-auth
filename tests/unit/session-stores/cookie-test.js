@@ -1,6 +1,5 @@
 /* jshint expr:true */
 import { describe, beforeEach, afterEach } from 'mocha';
-import sinon from 'sinon';
 import Cookie from 'ember-simple-auth/session-stores/cookie';
 import itBehavesLikeAStore from './shared/store-behavior';
 import itBehavesLikeACookieStore from './shared/cookie-store-behavior';
@@ -15,11 +14,11 @@ function createCookieStore(cookiesService, options = {}) {
 describe('CookieStore', () => {
   let store;
 
-  beforeEach(function() {
+  beforeEach(() => {
     store = createCookieStore(FakeCookieService.create());
   });
 
-  afterEach(function() {
+  afterEach(() => {
     store.clear();
   });
 
@@ -41,10 +40,6 @@ describe('CookieStore', () => {
     },
     sync(store) {
       store._syncData();
-    },
-    spyRewriteCookieMethod(store) {
-      sinon.spy(store, 'rewriteCookie');
-      return store.rewriteCookie;
     }
   });
 });

@@ -61,7 +61,7 @@ export default Mixin.create({
     by the {{#crossLink "DataAdapterMixin/authorizer:property"}}{{/crossLink}}
     (see
     {{#crossLink "SessionService/authorize:method"}}{{/crossLink}}). The
-    specific header name and contents depend on the actual authorizer that is
+    specific header name and contents depend on the actual auhorizer that is
     used.
 
     This method applies for Ember Data 2.6 and older. See `headersForRequest`
@@ -95,7 +95,7 @@ export default Mixin.create({
     This method will only be called in Ember Data 2.7 or greater. Older versions
     will rely on `ajaxOptions` for request header injection.
 
-    @method headersForRequest
+    @method handleResponse
     @protected
    */
   headersForRequest() {

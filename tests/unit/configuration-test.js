@@ -1,59 +1,60 @@
 /* jshint expr:true */
-import { describe, afterEach, it } from 'mocha';
+import { it } from 'ember-mocha';
+import { describe, afterEach } from 'mocha';
 import { expect } from 'chai';
 import Configuration from 'ember-simple-auth/configuration';
 
 describe('Configuration', () => {
-  afterEach(function() {
+  afterEach(() => {
     Configuration.load({});
   });
 
-  describe('baseURL', function() {
-    it('defaults to ""', function() {
+  describe('baseURL', () => {
+    it('defaults to ""', () => {
       Configuration.load({});
 
       expect(Configuration.baseURL).to.eql('');
     });
   });
 
-  describe('authenticationRoute', function() {
-    it('defaults to "login"', function() {
+  describe('authenticationRoute', () => {
+    it('defaults to "login"', () => {
       expect(Configuration.authenticationRoute).to.eql('login');
     });
   });
 
-  describe('routeAfterAuthentication', function() {
-    it('defaults to "index"', function() {
+  describe('routeAfterAuthentication', () => {
+    it('defaults to "index"', () => {
       expect(Configuration.routeAfterAuthentication).to.eql('index');
     });
   });
 
-  describe('routeIfAlreadyAuthenticated', function() {
-    it('defaults to "index"', function() {
+  describe('routeIfAlreadyAuthenticated', () => {
+    it('defaults to "index"', () => {
       expect(Configuration.routeIfAlreadyAuthenticated).to.eql('index');
     });
   });
 
-  describe('.load', function() {
-    it('sets baseURL correctly', function() {
+  describe('.load', () => {
+    it('sets baseURL correctly', () => {
       Configuration.load({ baseURL: '/baseURL' });
 
       expect(Configuration.baseURL).to.eql('/baseURL');
     });
 
-    it('sets authenticationRoute correctly', function() {
+    it('sets authenticationRoute correctly', () => {
       Configuration.load({ authenticationRoute: 'authenticationRoute' });
 
       expect(Configuration.authenticationRoute).to.eql('authenticationRoute');
     });
 
-    it('sets routeAfterAuthentication correctly', function() {
+    it('sets routeAfterAuthentication correctly', () => {
       Configuration.load({ routeAfterAuthentication: 'routeAfterAuthentication' });
 
       expect(Configuration.routeAfterAuthentication).to.eql('routeAfterAuthentication');
     });
 
-    it('sets routeIfAlreadyAuthenticated correctly', function() {
+    it('sets routeIfAlreadyAuthenticated correctly', () => {
       Configuration.load({ routeIfAlreadyAuthenticated: 'routeIfAlreadyAuthenticated' });
 
       expect(Configuration.routeIfAlreadyAuthenticated).to.eql('routeIfAlreadyAuthenticated');

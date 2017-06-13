@@ -1,11 +1,12 @@
 import Ember from 'ember';
+import getOwner from 'ember-getowner-polyfill';
 import Configuration from './../configuration';
 
-const { inject: { service }, Mixin, assert, computed, getOwner } = Ember;
+const { inject: { service }, Mixin, assert, computed } = Ember;
 
 /**
   __This mixin is used to make routes accessible only if the session is
-  not authenticated__ (e.g., login and registration routes). It defines a
+  not authenticated__ (e.g. login and registration routes). It defines a
   `beforeModel` method that aborts the current transition and instead
   transitions to the
   {{#crossLink "Configuration/routeIfAlreadyAuthenticated:property"}}{{/crossLink}}
@@ -67,10 +68,14 @@ export default Mixin.create({
     @param {Transition} transition The transition that lead to this route
     @public
   */
-  beforeModel() {
+  beforeModel(transition) {
     if (this.get('session').get('isAuthenticated')) {
       let routeIfAlreadyAuthenticated = this.get('routeIfAlreadyAuthenticated');
       assert('The route configured as Configuration.routeIfAlreadyAuthenticated cannot implement the UnauthenticatedRouteMixin mixin as that leads to an infinite transitioning loop!', this.get('routeName') !== routeIfAlreadyAuthenticated);
+
+      if (!this.get('_isFastBoot')) {
+        transition.abort();
+      }
 
       return this.transitionTo(routeIfAlreadyAuthenticated);
     } else {

@@ -1,17 +1,18 @@
 /* jshint expr:true */
-import { describe, beforeEach, it } from 'mocha';
+import { it } from 'ember-mocha';
+import { describe, beforeEach } from 'mocha';
 import { expect } from 'chai';
 import Base from 'ember-simple-auth/authenticators/base';
 
 describe('BaseAuthenticator', () => {
   let authenticator;
 
-  beforeEach(function() {
+  beforeEach(() => {
     authenticator = Base.create();
   });
 
-  describe('#restore', function() {
-    it('returns a rejecting promise', function(done) {
+  describe('#restore', () => {
+    it('returns a rejecting promise', (done) => {
       authenticator.restore().catch(() => {
         expect(true).to.be.true;
         done();
@@ -19,8 +20,8 @@ describe('BaseAuthenticator', () => {
     });
   });
 
-  describe('#authenticate', function() {
-    it('returns a rejecting promise', function(done) {
+  describe('#authenticate', () => {
+    it('returns a rejecting promise', (done) => {
       authenticator.authenticate().catch(() => {
         expect(true).to.be.true;
         done();
@@ -28,8 +29,8 @@ describe('BaseAuthenticator', () => {
     });
   });
 
-  describe('#invalidate', function() {
-    it('returns a resolving promise', function(done) {
+  describe('#invalidate', () => {
+    it('returns a resolving promise', (done) => {
       authenticator.invalidate().then(() => {
         expect(true).to.be.true;
         done();

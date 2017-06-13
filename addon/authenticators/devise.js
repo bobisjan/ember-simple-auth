@@ -1,11 +1,8 @@
 import Ember from 'ember';
 import BaseAuthenticator from './base';
-import fetch from 'ember-network/fetch';
 
-const { RSVP: { Promise }, isEmpty, run, assign: emberAssign, merge, computed } = Ember;
+const { RSVP: { Promise }, isEmpty, run, $: jQuery, assign: emberAssign, merge } = Ember;
 const assign = emberAssign || merge;
-
-const JSON_CONTENT_TYPE = 'application/json';
 
 /**
   Authenticator that works with the Ruby gem
@@ -66,8 +63,7 @@ export default BaseAuthenticator.extend({
 
   /**
     When authentication fails, the rejection callback is provided with the whole
-    Fetch API [Response](https://fetch.spec.whatwg.org/#response-class) object
-    instead of its responseJSON or responseText.
+    XHR object instead of it's response JSON or text.
 
     This is useful for cases when the backend provides additional context not
     available in the response body.
@@ -75,28 +71,9 @@ export default BaseAuthenticator.extend({
     @property rejectWithXhr
     @type Boolean
     @default false
-    @deprecated DeviseAuthenticator/rejectWithResponse:property
     @public
   */
-  rejectWithXhr: computed.deprecatingAlias('rejectWithResponse', {
-    id: `ember-simple-auth.authenticator.reject-with-xhr`,
-    until: '2.0.0'
-  }),
-
-  /**
-    When authentication fails, the rejection callback is provided with the whole
-    Fetch API [Response](https://fetch.spec.whatwg.org/#response-class) object
-    instead of its responseJSON or responseText.
-
-    This is useful for cases when the backend provides additional context not
-    available in the response body.
-
-    @property rejectWithResponse
-    @type Boolean
-    @default false
-    @public
-  */
-  rejectWithResponse: false,
+  rejectWithXhr: false,
 
   /**
     Restores the session from a session data object; __returns a resolving
@@ -112,7 +89,6 @@ export default BaseAuthenticator.extend({
     @public
   */
   restore(data) {
-    // eslint-disable-next-line prefer-promise-reject-errors
     return this._validate(data) ? Promise.resolve(data) : Promise.reject();
   },
 
@@ -136,31 +112,24 @@ export default BaseAuthenticator.extend({
   */
   authenticate(identification, password) {
     return new Promise((resolve, reject) => {
-      const useResponse = this.get('rejectWithResponse');
+      const useXhr = this.get('rejectWithXhr');
       const { resourceName, identificationAttributeName, tokenAttributeName } = this.getProperties('resourceName', 'identificationAttributeName', 'tokenAttributeName');
-      const data = {};
+      const data         = {};
       data[resourceName] = { password };
       data[resourceName][identificationAttributeName] = identification;
 
-      this.makeRequest(data).then((response) => {
-        if (response.ok) {
-          response.json().then((json) => {
-            if (this._validate(json)) {
-              const resourceName = this.get('resourceName');
-              const _json = json[resourceName] ? json[resourceName] : json;
-              run(null, resolve, _json);
-            } else {
-              run(null, reject, `Check that server response includes ${tokenAttributeName} and ${identificationAttributeName}`);
-            }
-          });
-        } else {
-          if (useResponse) {
-            run(null, reject, response);
+      return this.makeRequest(data).then(
+        (response) => {
+          if (this._validate(response)) {
+            const resourceName = this.get('resourceName');
+            const _response = response[resourceName] ? response[resourceName] : response;
+            run(null, resolve, _response);
           } else {
-            response.json().then((json) => run(null, reject, json));
+            run(null, reject, `Check that server response includes ${tokenAttributeName} and ${identificationAttributeName}`);
           }
-        }
-      }).catch((error) => run(null, reject, error));
+        },
+        (xhr) => run(null, reject, useXhr ? xhr : (xhr.responseJSON || xhr.responseText))
+      );
     });
   },
 
@@ -176,30 +145,29 @@ export default BaseAuthenticator.extend({
   },
 
   /**
-    Makes a request to the Devise server using
-    [ember-network/fetch](https://github.com/tomdale/ember-network#fetch).
+    Makes a request to the devise server.
 
     @method makeRequest
     @param {Object} data The request data
-    @param {Object} options request options that are passed to `fetch`
-    @return {Promise} The promise returned by `fetch`
+    @param {Object} options Ajax configuration object merged into argument of `$.ajax`
+    @return {jQuery.Deferred} A promise like jQuery.Deferred as returned by `$.ajax`
     @protected
   */
-  makeRequest(data, options = {}) {
-    let url = options.url || this.get('serverTokenEndpoint');
+  makeRequest(data, options) {
+    const serverTokenEndpoint = this.get('serverTokenEndpoint');
     let requestOptions = {};
-    let body = JSON.stringify(data);
     assign(requestOptions, {
-      body,
-      method:   'POST',
-      headers:  {
-        'accept':       JSON_CONTENT_TYPE,
-        'content-type': JSON_CONTENT_TYPE
+      url:      serverTokenEndpoint,
+      type:     'POST',
+      dataType: 'json',
+      data,
+      beforeSend(xhr, settings) {
+        xhr.setRequestHeader('Accept', settings.accepts.json);
       }
     });
     assign(requestOptions, options || {});
 
-    return fetch(url, requestOptions);
+    return jQuery.ajax(requestOptions);
   },
 
   _validate(data) {
