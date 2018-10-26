@@ -15,7 +15,10 @@ export default function setupSessionRestoration(registry) {
 
         return session.restore().then(
           () => originalBeforeModel.apply(this, arguments),
-          () => originalBeforeModel.apply(this, arguments)
+          (error) => {
+            console.error(error);
+            return originalBeforeModel.apply(this, arguments);
+          }
         );
       };
     },
